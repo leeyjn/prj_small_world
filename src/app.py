@@ -5,6 +5,7 @@ import networkx as nx
 import dash_cytoscape as cyto
 import json
 from datetime import datetime
+import os
 
 # ✅ SQLite 데이터베이스 연결
 DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"
