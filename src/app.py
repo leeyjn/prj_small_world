@@ -28,18 +28,7 @@ selected_user = st.selectbox("유저를 선택하세요:", df_users["user_id"].a
 # ✅ 선택된 유저의 가입 날짜 가져오기
 user_created_at = df_users[df_users["user_id"] == int(selected_user)]["created_at"].values[0]
 
-# ✅ 날짜 형식 변환 (마이크로초 포함 여부 확인)
-try:
-    min_date = datetime.strptime(user_created_at, "%Y-%m-%d %H:%M:%S.%f")  # 마이크로초 포함된 경우
-except ValueError:
-    min_date = datetime.strptime(user_created_at, "%Y-%m-%d %H:%M:%S")  # 마이크로초 없는 경우
-
-max_date = datetime.today()
-
-# ✅ 3️⃣ 친구 추가 시각화 (슬라이더)
-selected_date = st.slider("네트워크 빌드 시간 선택", min_value=min_date, max_value=max_date, value=min_date)
-
-# ✅ 4️⃣ 친구 요청 데이터 가져오기 (JSON 형태로 저장된 requests_list 파싱)
+# ✅ 친구 요청 데이터 가져오기 (JSON 형태로 저장된 requests_list 파싱)
 query_friend_requests = """
     SELECT user_id, requests_list
     FROM friend_requests_optimized
@@ -52,6 +41,7 @@ friend_requests = []
 for _, row in df_requests.iterrows():
     user_id = row["user_id"]
     requests_list = json.loads(row["requests_list"]) if isinstance(row["requests_list"], str) else []
+    
     for request in requests_list:
         friend_requests.append({
             "receive_user_id": user_id,
@@ -62,21 +52,28 @@ for _, row in df_requests.iterrows():
 
 df_requests_expanded = pd.DataFrame(friend_requests)
 
-# ✅ 5️⃣ 네트워크 그래프 데이터 구성
+# ✅ 3️⃣ 유저별 슬라이딩 바의 최소/최대 날짜 계산
+if not df_requests_expanded.empty:
+    df_requests_expanded["created_at"] = pd.to_datetime(df_requests_expanded["created_at"], errors="coerce")
+    min_date = df_requests_expanded["created_at"].min()  # 유저의 첫 친구 요청 날짜
+    max_date = df_requests_expanded["created_at"].max()  # 유저의 마지막 친구 요청 날짜
+else:
+    min_date = datetime.strptime(user_created_at, "%Y-%m-%d %H:%M:%S.%f")  # 유저 가입 날짜
+    max_date = datetime.today()  # 현재 날짜
+
+# ✅ 4️⃣ 친구 추가 시각화 (유저별 동적 타임라인 슬라이더 적용)
+selected_date = st.slider("네트워크 빌드 시간 선택", min_value=min_date, max_value=max_date, value=min_date)
+
+# ✅ 5️⃣ 선택된 기간 내의 친구 요청 필터링
+filtered_requests = df_requests_expanded[df_requests_expanded["created_at"] <= selected_date]
+
+# ✅ 6️⃣ 네트워크 그래프 데이터 구성
 G = nx.Graph()
 G.add_node(int(selected_user), label=str(selected_user))  # 초기 노드
 
-# ✅ 시간 순서대로 친구 추가 (슬라이더에서 선택한 시간 이전의 요청만 반영)
-for _, row in df_requests_expanded.iterrows():
-    request_time = None
-    try:
-        request_time = datetime.strptime(row["created_at"], "%Y-%m-%d %H:%M:%S.%f")  # 마이크로초 포함된 경우
-    except ValueError:
-        request_time = datetime.strptime(row["created_at"], "%Y-%m-%d %H:%M:%S")  # 마이크로초 없는 경우
-
-    if request_time <= selected_date:
-        G.add_node(row["send_user_id"], label=str(row["send_user_id"]))
-        G.add_edge(int(selected_user), row["send_user_id"])
+for _, row in filtered_requests.iterrows():
+    G.add_node(row["send_user_id"], label=str(row["send_user_id"]))
+    G.add_edge(int(selected_user), row["send_user_id"])
 
 # ✅ Cytoscape 노드 & 엣지 변환
 cyto_nodes = [{"data": {"id": str(n), "label": str(n)}} for n in G.nodes]
