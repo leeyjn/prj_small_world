@@ -5,6 +5,7 @@ import networkx as nx
 import dash_cytoscape as cyto
 import json
 from datetime import datetime
+import os
 
 # ✅ 환경 감지 (로컬 vs. 클라우드)
 if "STREAMLIT_SERVER" in os.environ:
