@@ -2,7 +2,10 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import networkx as nx
+import dash
+from dash import dcc, html
 import dash_cytoscape as cyto
+from flask import Flask
 import json
 from datetime import datetime
 import os
@@ -79,21 +82,32 @@ for _, row in filtered_requests.iterrows():
 cyto_nodes = [{"data": {"id": str(n), "label": str(n)}} for n in G.nodes]
 cyto_edges = [{"data": {"source": str(u), "target": str(v)}} for u, v in G.edges]
 
-# ✅ Cytoscape 네트워크 시각화
-cyto_graph = cyto.Cytoscape(
-    id="cyto-graph",
-    elements=cyto_nodes + cyto_edges,
-    layout={"name": "cose"},
-    style={"width": "100%", "height": "600px", "border": "1px solid black"},
-    stylesheet=[
-        {"selector": "node", "style": {"content": "data(label)", "text-valign": "center", "background-color": "#0084ff"}},
-        {"selector": "edge", "style": {"line-color": "#9dbaea", "width": 2}},
-    ]
-)
+# ✅ Flask 앱 생성
+server = Flask(__name__)
+app = dash.Dash(__name__, server=server, routes_pathname_prefix="/dash/")
 
-# ✅ Streamlit에서 `st.write()`가 아니라 `st.components.v1.html()` 사용
+# ✅ Dash 레이아웃 설정
+app.layout = html.Div([
+    html.H3("📡 네트워크 성장 과정"),
+    cyto.Cytoscape(
+        id="cyto-graph",
+        elements=cyto_nodes + cyto_edges,
+        layout={"name": "cose"},
+        style={"width": "100%", "height": "600px", "border": "1px solid black"},
+        stylesheet=[
+            {"selector": "node", "style": {"content": "data(label)", "text-valign": "center", "background-color": "#0084ff"}},
+            {"selector": "edge", "style": {"line-color": "#9dbaea", "width": 2}},
+        ]
+    )
+])
+
+# ✅ Dash 앱을 Streamlit에서 iframe으로 표시
 st.write("### 네트워크 성장 과정")
-st.components.v1.html(
-    cyto_graph.to_html(),
-    height=700,
-)
+st.components.v1.iframe("http://localhost:8050/dash/", height=700)
+
+# ✅ SQLite 연결 종료
+conn.close()
+
+# ✅ Dash 실행
+if __name__ == "__main__":
+    app.run_server(debug=True, port=8050)

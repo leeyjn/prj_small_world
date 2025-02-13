@@ -24,4 +24,6 @@ grpcio-status==1.68.1
 protobuf>=5.26.1
 
 #네트워크 관련
-dash-cytoscape==0.3.0
+dash>=2.14.1
+dash-cytoscape>=0.3.0
+flask>=2.2.2
