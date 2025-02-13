@@ -10,3 +10,6 @@ db/network_analysis.db-journal
 __pycache__/
 *.pyc
 *.pyo
+
+# 환경 파일 제외
+.env
