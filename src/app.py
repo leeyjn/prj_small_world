@@ -55,11 +55,11 @@ df_requests_expanded = pd.DataFrame(friend_requests)
 # ✅ 3️⃣ 유저별 슬라이딩 바의 최소/최대 날짜 계산
 if not df_requests_expanded.empty:
     df_requests_expanded["created_at"] = pd.to_datetime(df_requests_expanded["created_at"], errors="coerce")
-    min_date = df_requests_expanded["created_at"].min()  # 유저의 첫 친구 요청 날짜
-    max_date = df_requests_expanded["created_at"].max()  # 유저의 마지막 친구 요청 날짜
+    min_date = df_requests_expanded["created_at"].min().to_pydatetime()  # 🔥 Timestamp -> datetime 변환
+    max_date = df_requests_expanded["created_at"].max().to_pydatetime()  # 🔥 Timestamp -> datetime 변환
 else:
-    min_date = datetime.strptime(user_created_at, "%Y-%m-%d %H:%M:%S.%f")  # 유저 가입 날짜
-    max_date = datetime.today()  # 현재 날짜
+    min_date = datetime.strptime(user_created_at, "%Y-%m-%d %H:%M:%S.%f").replace(microsecond=0)  # 🔥 datetime 변환 후 마이크로초 제거
+    max_date = datetime.today()
 
 # ✅ 4️⃣ 친구 추가 시각화 (유저별 동적 타임라인 슬라이더 적용)
 selected_date = st.slider("네트워크 빌드 시간 선택", min_value=min_date, max_value=max_date, value=min_date)
