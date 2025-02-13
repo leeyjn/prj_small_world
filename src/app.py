@@ -80,20 +80,20 @@ cyto_nodes = [{"data": {"id": str(n), "label": str(n)}} for n in G.nodes]
 cyto_edges = [{"data": {"source": str(u), "target": str(v)}} for u, v in G.edges]
 
 # ✅ Cytoscape 네트워크 시각화
-cyto_style = {
-    "height": "600px",
-    "width": "100%",
-    "border": "1px solid lightgray"
-}
-
-st.write("### 네트워크 성장 과정")
 cyto_graph = cyto.Cytoscape(
     id="cyto-graph",
     elements=cyto_nodes + cyto_edges,
     layout={"name": "cose"},
-    style=cyto_style
+    style={"width": "100%", "height": "600px", "border": "1px solid black"},
+    stylesheet=[
+        {"selector": "node", "style": {"content": "data(label)", "text-valign": "center", "background-color": "#0084ff"}},
+        {"selector": "edge", "style": {"line-color": "#9dbaea", "width": 2}},
+    ]
 )
-st.write(cyto_graph)
 
-# ✅ SQLite 연결 종료
-conn.close()
+# ✅ Streamlit에서 `st.write()`가 아니라 `st.components.v1.html()` 사용
+st.write("### 네트워크 성장 과정")
+st.components.v1.html(
+    cyto_graph.to_html(),
+    height=700,
+)
