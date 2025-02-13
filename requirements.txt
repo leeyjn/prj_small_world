@@ -1,29 +1,17 @@
-# ✅ Streamlit (최신 버전 적용)
-streamlit==1.36.0
-streamlit-option-menu==0.4.0
+# ✅ Streamlit (웹 UI)
+streamlit>=1.30.0
 
-# ✅ 데이터 처리
-pandas==2.1.4
-numpy==1.26.3
-
-# ✅ HTTP 요청 (API 사용 가능)
-requests==2.31.0
-
-# ✅ 데이터베이스 (SQLite 기본 제공, 별도 설치 불필요)
-
-# ✅ 데이터 시각화 및 네트워크 분석 (추가 가능)
-plotly==5.17.0
-networkx==3.1  # 네트워크 분석 및 시각화
-matplotlib==3.8.2  # 플롯 및 그래프 시각화
-
-# ✅ 환경 변수 로드 (보안 설정)
-python-dotenv==1.0.0
-
-# ✅ gRPC 및 protobuf (필수 업데이트)
-grpcio-status==1.68.1
-protobuf>=5.26.1
-
-#네트워크 관련
+# ✅ Dash (대시보드 & 네트워크 시각화)
 dash>=2.14.1
 dash-cytoscape>=0.3.0
+
+# ✅ Flask (Dash의 백엔드 서버)
 flask>=2.2.2
+
+# ✅ 데이터 분석 및 네트워크 분석
+pandas>=2.0.3
+numpy>=1.24.0
+networkx>=3.0
+
+# ✅ JSON 처리
+orjson>=3.9.2
