@@ -13,3 +13,6 @@ __pycache__/
 
 # 환경 파일 제외
 .env
+
+# Streamlit Cloud 환경 변수 파일 (GitHub 업로드 방지)
+.streamlit/secrets.toml
