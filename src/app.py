@@ -7,14 +7,9 @@ import json
 from datetime import datetime
 import os
 
-# ✅ 환경 감지 (로컬 vs. 클라우드)
-if "STREAMLIT_SERVER" in os.environ:
-    DB_PATH = "/mount/src/prj_small_world/db/network_analysis.db"  # 클라우드 환경용
-else:
-    DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"  # 로컬 환경용
-
-# ✅ SQLite 연결
-conn = sqlite3.connect(DB_PATH, check_same_thread=False)  # ✅ Streamlit 실행 시 `check_same_thread=False` 필요!
+# ✅ SQLite 데이터베이스 연결
+DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"
+conn = sqlite3.connect(DB_PATH)
 
 # ✅ 1️⃣ 유저 목록 가져오기 (가입일 기준 정렬)
 query_users = """
@@ -32,7 +27,13 @@ selected_user = st.selectbox("유저를 선택하세요:", df_users["user_id"].a
 
 # ✅ 선택된 유저의 가입 날짜 가져오기
 user_created_at = df_users[df_users["user_id"] == int(selected_user)]["created_at"].values[0]
-min_date = datetime.strptime(user_created_at, "%Y-%m-%d")
+
+# ✅ 날짜 형식 변환 (마이크로초 제거)
+try:
+    min_date = datetime.strptime(user_created_at, "%Y-%m-%d %H:%M:%S.%f")  # ✅ 마이크로초 포함된 경우 처리
+except ValueError:
+    min_date = datetime.strptime(user_created_at, "%Y-%m-%d %H:%M:%S")  # ✅ 마이크로초 없는 경우 처리
+
 max_date = datetime.today()
 
 # ✅ 3️⃣ 친구 추가 시각화 (슬라이더)
@@ -53,7 +54,13 @@ G.add_node(int(selected_user), label=str(selected_user))  # 초기 노드
 
 # ✅ 시간 순서대로 친구 추가 (슬라이더에서 선택한 시간 이전의 요청만 반영)
 for _, row in df_requests.iterrows():
-    if datetime.strptime(row["created_at"], "%Y-%m-%d %H:%M:%S") <= selected_date:
+    request_time = None
+    try:
+        request_time = datetime.strptime(row["created_at"], "%Y-%m-%d %H:%M:%S.%f")  # 마이크로초 포함된 경우
+    except ValueError:
+        request_time = datetime.strptime(row["created_at"], "%Y-%m-%d %H:%M:%S")  # 마이크로초 없는 경우
+
+    if request_time <= selected_date:
         G.add_node(row["send_user_id"], label=str(row["send_user_id"]))
         G.add_edge(int(selected_user), row["send_user_id"])
 
