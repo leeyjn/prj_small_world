@@ -20,10 +20,9 @@ selected_user = user_selector(df_users)
 df_requests = load_friend_requests(selected_user)
 
 # ✅ 슬라이딩 바 설정
-min_date = df_requests["created_at"].min() if not df_requests.empty else None
-max_date = df_requests["created_at"].max() if not df_requests.empty else None
-
-if min_date and max_date:
+if not df_requests.empty:
+    min_date = df_requests["created_at"].min().date()
+    max_date = df_requests["created_at"].max().date()
     selected_date = date_slider(min_date, max_date)
 
     # ✅ Dash 서버에 유저 & 시간 정보 업데이트

@@ -9,6 +9,7 @@ def load_users():
     conn = sqlite3.connect(DB_PATH)
     query = "SELECT user_id, friends_num, created_at FROM users ORDER BY created_at ASC"
     df_users = pd.read_sql_query(query, conn)
+    df_users["created_at"] = pd.to_datetime(df_users["created_at"], errors="coerce")  # 날짜 변환
     conn.close()
     return df_users
 

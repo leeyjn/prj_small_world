@@ -1,8 +1,8 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import dash
 from dash import dcc, html
 import dash_cytoscape as cyto
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from data_loader import load_users, load_friend_requests
 from network_builder import build_network
 
@@ -38,7 +38,6 @@ def update_graph(selected_user, time_index):
     if df_requests.empty:
         return []
 
-    # ✅ 시간 필터 적용
     selected_date = df_requests["created_at"].min() + pd.to_timedelta(time_index, unit="D")
     G = build_network(selected_user, df_requests, selected_date)
 
