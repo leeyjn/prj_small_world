@@ -1,11 +1,13 @@
 import dash
 import dash_cytoscape as cyto
-import dash.html as html
+import dash_core_components as dcc
+import dash_html_components as html
 import sqlite3
 import pandas as pd
 import json
 from dash.dependencies import Input, Output, State
 from flask import Flask, request, jsonify
+import plotly.express as px
 
 # ✅ SQLite 데이터베이스 경로
 DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"
@@ -14,19 +16,33 @@ DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, url_base_pathname="/dash/")
 
-# ✅ 네트워크 그래프 초기 상태
+# ✅ 네트워크 그래프 & 친구 수 변화 그래프 (가로 레이아웃 적용)
 app.layout = html.Div([
-    html.H2("📊 유저 네트워크 성장 과정", style={"color": "white", "text-align": "center"}),  # 제목을 하얀색으로 변경
-    cyto.Cytoscape(
-        id="cyto-graph",
-        layout={"name": "cose"},
-        style={"height": "600px", "width": "100%", "border": "1px solid lightgray", "backgroundColor": "#1E1E1E"},  # 배경을 더 밝게
-        elements=[],
-        stylesheet=[
-            {"selector": "node", "style": {"content": "data(label)", "color": "white", "background-color": "#4A90E2", "font-size": "16px"}},
-            {"selector": "edge", "style": {"width": 2, "line-color": "white"}},  # 엣지 색상 변경
-        ],
-    )
+    html.H2("📊 유저 네트워크 성장 과정", style={"color": "white", "text-align": "center"}),  
+
+    # ✅ 가로형 레이아웃
+    html.Div([
+        # 🔹 왼쪽: 네트워크 시각화
+        html.Div([
+            html.H3("🌐 네트워크 시각화", style={"color": "white", "text-align": "center"}),
+            cyto.Cytoscape(
+                id="cyto-graph",
+                layout={"name": "cose"},
+                style={"height": "600px", "width": "100%", "border": "1px solid lightgray", "backgroundColor": "#1E1E1E"},
+                elements=[],
+                stylesheet=[
+                    {"selector": "node", "style": {"content": "data(label)", "color": "white", "background-color": "#4A90E2", "font-size": "16px"}},
+                    {"selector": "edge", "style": {"width": 2, "line-color": "white"}},
+                ],
+            )
+        ], style={"width": "60%", "display": "inline-block", "padding": "10px"}),
+
+        # 🔹 오른쪽: 친구 수 변화 그래프
+        html.Div([
+            html.H3("📈 친구 수 변화", style={"color": "white", "text-align": "center"}),
+            dcc.Graph(id="friend-count-graph", style={"height": "600px"})
+        ], style={"width": "40%", "display": "inline-block", "padding": "10px"}),
+    ], style={"display": "flex", "flex-direction": "row"}),
 ])
 
 # ✅ 전역 변수로 네트워크 데이터 저장
@@ -37,7 +53,7 @@ def get_network_data(user_id, selected_date):
     """선택된 유저의 네트워크 데이터를 가져옴"""
     conn = sqlite3.connect(DB_PATH)
 
-    # ✅ 해당 유저의 친구 요청 내역 가져오기
+    # ✅ 친구 요청 내역 가져오기
     query = """
         SELECT requests_list FROM friend_requests_optimized WHERE user_id = ?
     """
@@ -64,6 +80,39 @@ def get_network_data(user_id, selected_date):
     return network_nodes + edges
 
 
+def get_friend_count_data(user_id):
+    """선택된 유저의 친구 수 변화를 시각화하기 위한 데이터 생성"""
+    conn = sqlite3.connect(DB_PATH)
+
+    query = """
+        SELECT requests_list FROM friend_requests_optimized WHERE user_id = ?
+    """
+    df = pd.read_sql_query(query, conn, params=(user_id,))
+    conn.close()
+
+    if df.empty:
+        return pd.DataFrame(columns=["date", "friend_count"])
+
+    df["requests_list"] = df["requests_list"].apply(json.loads)
+
+    friend_counts = {}
+    for _, row in df.iterrows():
+        for req in row["requests_list"]:
+            req_date = pd.to_datetime(req["created_at"]).date()
+            friend_counts[req_date] = friend_counts.get(req_date, 0) + 1
+
+    # ✅ 날짜별 누적 친구 수 계산
+    sorted_dates = sorted(friend_counts.keys())
+    cumulative_friends = []
+    total_friends = 0
+
+    for date in sorted_dates:
+        total_friends += friend_counts[date]
+        cumulative_friends.append({"date": date, "friend_count": total_friends})
+
+    return pd.DataFrame(cumulative_friends)
+
+
 @server.route("/update_network", methods=["POST"])
 def update_network():
     global latest_network_data
@@ -82,6 +131,27 @@ def update_network():
 )
 def update_graph(_, elements):
     return latest_network_data
+
+
+@app.callback(
+    Output("friend-count-graph", "figure"),
+    [Input("cyto-graph", "id")],
+    [State("cyto-graph", "elements")]
+)
+def update_friend_count_graph(_):
+    """친구 수 변화 그래프 업데이트"""
+    if not latest_network_data:
+        return px.line(title="No Data", labels={"date": "날짜", "friend_count": "친구 수"})
+
+    user_id = latest_network_data[0]["data"]["id"]
+    df_friends = get_friend_count_data(user_id)
+
+    if df_friends.empty:
+        return px.line(title="No Data", labels={"date": "날짜", "friend_count": "친구 수"})
+
+    fig = px.line(df_friends, x="date", y="friend_count", markers=True, title=f"📊 {user_id}의 친구 수 변화")
+    fig.update_layout(paper_bgcolor="#1E1E1E", plot_bgcolor="#1E1E1E", font=dict(color="white"))
+    return fig
 
 
 if __name__ == "__main__":
