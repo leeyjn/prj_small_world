@@ -1,16 +1,14 @@
 import networkx as nx
+import pandas as pd
 
-def build_network(user_id, df_requests, selected_date):
-    """선택된 날짜까지의 네트워크 그래프 구축"""
+def build_network(user_id, df_requests):
+    """ 선택된 유저의 친구 네트워크를 그래프로 구축 """
     G = nx.Graph()
-    G.add_node(str(user_id), label=str(user_id))  # 모든 ID를 문자열로 저장
+    G.add_node(user_id)  # 중심 유저 추가
 
-    filtered_requests = df_requests[df_requests["created_at"] <= selected_date]
-    
-    for _, row in filtered_requests.iterrows():
-        friend_id = str(row["send_user_id"])  # ID를 문자열로 변환
-        G.add_node(friend_id, label=friend_id)
-        G.add_edge(str(user_id), friend_id)
+    for _, row in df_requests.iterrows():
+        friend_id = row["send_user_id"]
+        G.add_node(friend_id)  # 친구 추가
+        G.add_edge(user_id, friend_id)  # 중심 유저와 연결
 
-    print(f"🟢 네트워크 빌드 완료: {len(G.nodes)} 노드, {len(G.edges)} 엣지")
     return G

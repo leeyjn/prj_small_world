@@ -1,36 +1,47 @@
 import sqlite3
-import pandas as pd
 import json
+import pandas as pd
 
 DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"
 
 def load_users():
-    """유저 목록 로드 (가입일 순 정렬)"""
+    """ users 테이블에서 유저 정보 가져오기 """
     conn = sqlite3.connect(DB_PATH)
-    query = "SELECT user_id, friends_num, created_at FROM users ORDER BY created_at ASC"
-    df_users = pd.read_sql_query(query, conn)
-    df_users["created_at"] = pd.to_datetime(df_users["created_at"], errors="coerce")  # 날짜 변환
+    query = "SELECT user_id, gender, grade, school_id, friends_num, group_id, created_at FROM users"
+    df = pd.read_sql_query(query, conn)
     conn.close()
-    
-    print(f"🟢 유저 데이터 로드 완료 ({len(df_users)}명)")
-    return df_users
+    return df
 
 def load_friend_requests(user_id):
-    """특정 유저의 친구 요청 기록 로드"""
+    """ 선택된 유저의 친구 요청 데이터를 JSON 변환 후 반환 """
     conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
     query = "SELECT requests_list FROM friend_requests_optimized WHERE user_id = ?"
-    df_requests = pd.read_sql_query(query, conn, params=(user_id,))
+    cursor.execute(query, (user_id,))
+    result = cursor.fetchone()
+    
     conn.close()
+    
+    if result and result[0]:  # 값이 존재하면 JSON 변환
+        requests_list = json.loads(result[0])
+        return pd.DataFrame(requests_list)
+    else:
+        return pd.DataFrame(columns=["send_user_id", "status", "created_at"])
 
-    if df_requests.empty:
-        print(f"⚠️ 유저 {user_id}의 친구 요청 데이터 없음")
-        return pd.DataFrame(columns=["send_user_id", "created_at", "status"])
-
-    requests_list = json.loads(df_requests.iloc[0]["requests_list"])
-    df_requests_expanded = pd.DataFrame(requests_list)
-
-    if "created_at" in df_requests_expanded:
-        df_requests_expanded["created_at"] = pd.to_datetime(df_requests_expanded["created_at"], errors="coerce")
-
-    print(f"🟢 유저 {user_id}의 친구 요청 데이터 로드 완료 ({len(df_requests_expanded)}개)")
-    return df_requests_expanded
+def load_friendships(user_id):
+    """ 선택된 유저의 친구 리스트를 JSON 변환 후 반환 """
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    query = "SELECT friend_list FROM friendships_optimized WHERE user_id = ?"
+    cursor.execute(query, (user_id,))
+    result = cursor.fetchone()
+    
+    conn.close()
+    
+    if result and result[0]:
+        friend_list = json.loads(result[0])  # JSON을 리스트로 변환
+        return pd.DataFrame({"friend_id": friend_list})  # pandas DataFrame 변환
+    else:
+        return pd.DataFrame(columns=["friend_id"])  # 빈 데이터 반환

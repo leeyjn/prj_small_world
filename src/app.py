@@ -13,7 +13,15 @@ if not df_requests.empty:
     max_date = df_requests["created_at"].max().date()
     selected_date = date_slider(min_date, max_date)
 
-    requests.post("http://localhost:8050/dash/", json={"selected_user": selected_user, "selected_date": str(selected_date)})
+    try:
+        response = requests.post("http://localhost:8050/dash/", json={
+            "selected_user": selected_user, 
+            "selected_date": str(selected_date)
+        })
+        print(f"📤 Dash 서버로 요청 보냄: {selected_user}, {selected_date}")
+        print(f"🔄 Dash 서버 응답 코드: {response.status_code}")
+    except requests.exceptions.ConnectionError:
+        st.error("🚨 Dash 서버 실행을 확인하세요!")
 
 st.write("### 네트워크 성장 과정")
 st.components.v1.iframe("http://localhost:8050/dash/", height=700)
