@@ -36,19 +36,27 @@ app.layout = html.Div([
     Input("time-slider", "value")
 )
 def update_graph(selected_user, time_index):
+    print(f"🔍 선택된 유저: {selected_user}")  # ✅ 유저 선택 확인
+
     if not selected_user:
+        print("⚠️ 유저가 선택되지 않음")
         return []
 
     df_requests = load_friend_requests(selected_user)
-    
+
     if df_requests.empty:
+        print("⚠️ 해당 유저의 친구 요청 데이터가 없음")
         return []
 
     selected_date = df_requests["created_at"].min() + pd.to_timedelta(time_index, unit="D")
+    print(f"📅 선택된 날짜: {selected_date}")  # ✅ 날짜 확인
+
     G = build_network(selected_user, df_requests, selected_date)
 
     cyto_nodes = [{"data": {"id": str(n), "label": str(n)}} for n in G.nodes]
     cyto_edges = [{"data": {"source": str(u), "target": str(v)}} for u, v in G.edges]
+
+    print(f"🛠️ 노드 개수: {len(cyto_nodes)}, 엣지 개수: {len(cyto_edges)}")  # ✅ 네트워크 크기 확인
 
     return cyto_nodes + cyto_edges
 
