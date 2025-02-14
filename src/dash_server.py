@@ -1,6 +1,6 @@
 import dash
 import dash_cytoscape as cyto
-from dash import html
+import dash_html_components as html
 import sqlite3
 import pandas as pd
 import json
@@ -60,7 +60,6 @@ def get_network_data(user_id, selected_date):
     return network_nodes + edges
 
 
-# ✅ API 엔드포인트: Streamlit이 요청을 보낼 때 실행됨
 @server.route("/update_network", methods=["POST"])
 def update_network():
     global latest_network_data
@@ -78,10 +77,9 @@ def update_network():
     return jsonify(network_data)
 
 
-# ✅ Cytoscape 그래프 업데이트 로직
 @app.callback(
     Output("cyto-graph", "elements"),
-    Input("cyto-graph", "id")  # 더미 Input (자동 업데이트를 위해)
+    Input("cyto-graph", "id")
 )
 def update_graph(_):
     """네트워크 그래프 업데이트"""
@@ -97,6 +95,5 @@ def update_graph(_):
         return []
 
 
-# ✅ Dash 서버 실행
 if __name__ == "__main__":
     app.run_server(debug=True, port=8050)
