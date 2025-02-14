@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask
 import dash
 from dash import dcc, html
 import dash_cytoscape as cyto
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 from data_loader import load_users, load_friend_requests
 from network_builder import build_network
 
@@ -19,11 +19,17 @@ app.layout = html.Div([
         id="cyto-graph",
         layout={"name": "cose"},
         style={"width": "100%", "height": "600px", "border": "1px solid black"},
-        elements=[]
+        elements=[],
+        stylesheet=[
+            {"selector": "node", "style": {"content": "data(label)", "background-color": "#0084ff"}},
+            {"selector": "edge", "style": {"line-color": "#9dbaea", "width": 2}},
+            {"selector": ".user-node", "style": {"background-color": "#ff5733", "label": "data(label)"}},
+            {"selector": ".friend-edge", "style": {"line-color": "#00aaff", "width": 2}},
+        ]
     )
 ])
 
-# ✅ 네트워크 데이터 업데이트 (유저 변경 & 시간 슬라이더 적용)
+# ✅ 네트워크 데이터 업데이트
 @app.callback(
     Output("cyto-graph", "elements"),
     Input("selected-user", "data"),
