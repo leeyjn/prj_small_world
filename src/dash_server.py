@@ -25,11 +25,11 @@ app.layout = html.Div([
             html.H3("🌐 네트워크 시각화", style={"color": "white", "text-align": "center"}),
             cyto.Cytoscape(
                 id="cyto-graph",
-                layout={"name": "cose"},
-                style={"height": "700px", "width": "100%", "border": "1px solid lightgray", "backgroundColor": "#1E1E1E"},
+                layout={"name": "cose", "gravity": 0.2},
+                style={"height": "700px", "width": "100%", "border": "1px solid lightgray", "backgroundColor": "#2C2C54"},
                 elements=[],
                 stylesheet=[
-                    {"selector": "node", "style": {"content": "data(label)", "color": "black", "background-color": "#FFD700", "font-size": "14px"}},
+                    {"selector": "node", "style": {"content": "data(label)", "color": "#1C1C1C", "background-color": "#FFFF66", "font-size": "14px"}},
                     {"selector": "edge", "style": {"width": 2, "line-color": "#1E90FF"}},
                 ],
             )
@@ -38,7 +38,7 @@ app.layout = html.Div([
         # 📈 친구 수 변화 그래프
         html.Div([
             html.H3("📈 친구 수 변화", style={"color": "white", "text-align": "center"}),
-            dcc.Graph(id="friend-count-graph", style={"height": "700px", "width": "100%"})
+            dcc.Graph(id="friend-count-graph", style={"height": "700px", "width": "100%", "backgroundColor": "#2C2C54"})
         ], style={"width": "50%", "padding": "10px", "margin-right": "20px"}),
     ], style={"display": "flex", "flex-direction": "row", "width": "100%", "justify-content": "center", "align-items": "center"}),
 ])
@@ -135,7 +135,7 @@ def update_friend_count_graph(_):
         return px.line(title="No Data", labels={"date": "날짜", "friend_count": "친구 수"})
 
     fig = px.line(df_friends, x="date", y="friend_count", markers=True, title=f"📊 {latest_user_id}의 친구 수 변화")
-    fig.update_layout(paper_bgcolor="#1E1E1E", plot_bgcolor="#1E1E1E", font=dict(color="white"))
+    fig.update_layout(paper_bgcolor="#2C2C54", plot_bgcolor="#2C2C54", font=dict(color="white"))
     return fig
 
 if __name__ == "__main__":
