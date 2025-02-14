@@ -16,10 +16,14 @@ DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, url_base_pathname="/dash/")
 
-# ✅ Tableau 스타일 가로형 레이아웃 적용
+# ✅ HORIZONTAL LAYOUT 적용
 app.layout = html.Div([
-    html.H2("📊 유저 네트워크 성장 과정 시각화", style={"color": "white", "text-align": "center"}),
+    # 🔹 왼쪽 상단 제목 영역
+    html.Div([
+        html.H1("📊 유저 네트워크 성장 과정 시각화", style={"color": "white", "text-align": "left", "margin-left": "20px"})
+    ], style={"width": "100%", "display": "flex", "justify-content": "flex-start"}),
 
+    # 🔹 전체 대시보드 영역 (네트워크 + 친구 수 변화)
     html.Div([
         # 🔹 왼쪽: 네트워크 시각화
         html.Div([
@@ -34,13 +38,13 @@ app.layout = html.Div([
                     {"selector": "edge", "style": {"width": 2, "line-color": "white"}},
                 ],
             )
-        ], style={"width": "60%", "display": "inline-block", "padding": "10px"}),
+        ], style={"width": "60%", "display": "inline-block", "padding": "10px", "margin-left": "20px"}),
 
         # 🔹 오른쪽: 친구 수 변화 그래프
         html.Div([
             html.H3("📈 친구 수 변화", style={"color": "white", "text-align": "center"}),
-            dcc.Graph(id="friend-count-graph", style={"height": "650px"})
-        ], style={"width": "40%", "display": "inline-block", "padding": "10px"}),
+            dcc.Graph(id="friend-count-graph", style={"height": "650px", "width": "100%"})
+        ], style={"width": "40%", "display": "inline-block", "padding": "10px", "margin-right": "20px"}),
     ], style={"display": "flex", "flex-direction": "row"}),
 ])
 
@@ -134,7 +138,7 @@ def update_graph(_):
     Output("friend-count-graph", "figure"),
     [Input("cyto-graph", "id")]
 )
-def update_friend_count_graph():
+def update_friend_count_graph(_):
     """친구 수 변화 그래프 업데이트"""
     if not latest_network_data:
         return px.line(title="No Data", labels={"date": "날짜", "friend_count": "친구 수"})
