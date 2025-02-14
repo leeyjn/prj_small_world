@@ -33,10 +33,10 @@ query_friend_requests = """
 df_requests = pd.read_sql_query(query_friend_requests, conn, params=(selected_user,))
 conn.close()
 
-# ✅ 슬라이딩 바 범위를 해당 유저의 데이터로 제한
+# ✅ 선택된 유저의 친구 요청 기록이 있다면, 가입 이후부터 해당 날짜까지 범위 설정
 if not df_requests.empty:
     df_requests["requests_list"] = df_requests["requests_list"].apply(lambda x: pd.DataFrame(eval(x)))
-    min_date = df_requests["requests_list"].apply(lambda x: x["created_at"].min()).min()
+    min_date = user_created_at  # 유저 가입 날짜
     max_date = df_requests["requests_list"].apply(lambda x: x["created_at"].max()).max()
     min_date, max_date = pd.to_datetime(min_date).date(), pd.to_datetime(max_date).date()
 else:
@@ -66,4 +66,4 @@ st.markdown(f"🔗 **네트워크 엣지 수:** {edge_count}")
 
 # ✅ Dash 네트워크 시각화 불러오기
 st.markdown("## 🌐 네트워크 시각화")
-components.iframe("http://127.0.0.1:8050/dash/", height=600, scrolling=True)
+components.iframe(f"http://127.0.0.1:8050/dash/?user={selected_user}&date={selected_date}", height=600, scrolling=True)

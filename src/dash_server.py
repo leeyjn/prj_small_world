@@ -4,7 +4,7 @@ import dash.html as html
 import sqlite3
 import pandas as pd
 import json
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from flask import Flask, request, jsonify
 
 # ✅ SQLite 데이터베이스 경로
@@ -73,9 +73,10 @@ def update_network():
 
 @app.callback(
     Output("cyto-graph", "elements"),
-    [Input("cyto-graph", "id")]
+    [Input("cyto-graph", "id")],
+    [State("cyto-graph", "elements")]
 )
-def update_graph(_):
+def update_graph(_, elements):
     return latest_network_data
 
 
