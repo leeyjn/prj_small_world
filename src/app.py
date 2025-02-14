@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import requests
 import sqlite3
-import streamlit.components.v1 as components
 import json
+import streamlit.components.v1 as components
 
 # ✅ 페이지 설정 (가로 확장 레이아웃 적용)
 st.set_page_config(layout="wide")
@@ -36,7 +36,7 @@ conn.close()
 
 # ✅ 선택된 유저의 친구 요청 기록이 있다면, 가입 이후부터 해당 날짜까지 범위 설정
 if not df_requests.empty:
-    df_requests["requests_list"] = df_requests["requests_list"].apply(json.loads)
+    df_requests["requests_list"] = df_requests["requests_list"].apply(json.loads)  # ✅ json.loads() 적용
     min_date = user_created_at  # 유저 가입 날짜
     max_date = df_requests["requests_list"].apply(lambda x: max([pd.to_datetime(req["created_at"]).date() for req in x], default=min_date)).max()
 else:
@@ -57,13 +57,12 @@ if response.status_code == 200:
     network_data = response.json()
     node_count = len([item for item in network_data if "source" not in item["data"]])
     edge_count = len([item for item in network_data if "source" in item["data"]])
+    st.success(f"✅ **네트워크 업데이트 완료** (노드: {node_count}, 엣지: {edge_count})")
 else:
-    network_data = []
-    node_count, edge_count = 0, 0
+    st.error("⚠️ **네트워크 업데이트 실패**")
+    st.write(response.text)  # 🔍 오류 메시지 확인
 
-st.markdown(f"📊 **네트워크 노드 수:** {node_count}")
-st.markdown(f"🔗 **네트워크 엣지 수:** {edge_count}")
-
-# ✅ Dash 네트워크 시각화 불러오기 (가로폭 확장 적용)
+# ✅ Dash 네트워크 시각화 불러오기 (유저 & 날짜 반영)
 st.markdown("## 🌐 네트워크 시각화")
-components.iframe("http://127.0.0.1:8050/dash/", width="100%", height=900, scrolling=True)
+iframe_url = f"http://127.0.0.1:8050/dash/?user={selected_user}&date={selected_date}"
+components.iframe(iframe_url, width=1500, height=900, scrolling=True)  # ✅ 동적 URL 반영
