@@ -1,6 +1,6 @@
 import dash
 import dash_cytoscape as cyto
-import dash_html_components as html
+import dash.html as html
 import sqlite3
 import pandas as pd
 import json
@@ -21,7 +21,7 @@ app.layout = html.Div([
         id="cyto-graph",
         layout={"name": "cose"},
         style={"height": "600px", "width": "100%", "border": "1px solid lightgray"},
-        elements=[]  # 초기엔 빈 그래프
+        elements=[]
     )
 ])
 
@@ -63,36 +63,20 @@ def get_network_data(user_id, selected_date):
 @server.route("/update_network", methods=["POST"])
 def update_network():
     global latest_network_data
-    data = request.json
-    user_id = data.get("selected_user")
-    selected_date = pd.to_datetime(data.get("selected_date")).date()
+    data = request.get_json()
+    selected_user = data["selected_user"]
+    selected_date = pd.to_datetime(data["selected_date"]).date()
 
-    if not user_id or not selected_date:
-        return jsonify({"error": "유효하지 않은 요청"}), 400
-
-    network_data = get_network_data(user_id, selected_date)
-    latest_network_data = network_data  # 전역 변수 업데이트
-    print(f"📊 업데이트된 네트워크 데이터 (노드 {len(network_data)}개): {network_data}")
-
-    return jsonify(network_data)
+    latest_network_data = get_network_data(selected_user, selected_date)
+    return jsonify(latest_network_data)
 
 
 @app.callback(
     Output("cyto-graph", "elements"),
-    Input("cyto-graph", "id")
+    [Input("cyto-graph", "id")]
 )
 def update_graph(_):
-    """네트워크 그래프 업데이트"""
-    try:
-        if latest_network_data:
-            print(f"🟢 Cytoscape 업데이트: {len(latest_network_data)} 요소")
-            return latest_network_data
-        else:
-            print("⚠️ Cytoscape 업데이트 실패: 네트워크 데이터 없음")
-            return []
-    except Exception as e:
-        print(f"🚨 그래프 업데이트 중 오류 발생: {e}")
-        return []
+    return latest_network_data
 
 
 if __name__ == "__main__":
