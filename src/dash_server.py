@@ -1,17 +1,80 @@
+import json
+import networkx as nx
+import pandas as pd
 from flask import Flask, request, jsonify
 import dash
 from dash import dcc, html
 import dash_cytoscape as cyto
 from dash.dependencies import Input, Output
-import json
-import pandas as pd
-from data_loader import load_friend_requests
-from network_builder import build_network
 
+# ✅ Flask 서버 생성
 server = Flask(__name__)
-app = dash.Dash(__name__, server=server, routes_pathname_prefix="/dash/")
 
-# 🔥 **Flask POST 요청 핸들러 추가**
+# ✅ Dash 앱 생성 및 Flask와 연결
+app = dash.Dash(__name__, server=server, url_base_pathname="/dash/")
+
+# ✅ 네트워크 그래프 초기 레이아웃
+app.layout = html.Div([
+    html.H3("📡 네트워크 성장 과정"),
+    cyto.Cytoscape(
+        id="cyto-graph",
+        layout={"name": "cose"},
+        style={"width": "100%", "height": "600px", "border": "1px solid black"},
+        elements=[],  # 🔥 초기에는 빈 리스트
+    ),
+    dcc.Interval(
+        id="interval-update",
+        interval=2000,  # 2초마다 업데이트
+        n_intervals=0
+    )
+])
+
+# ✅ 친구 요청 데이터 로드 함수
+def load_friend_requests(user_id):
+    """SQLite에서 해당 유저의 친구 요청 데이터 로드"""
+    import sqlite3
+
+    DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"
+    conn = sqlite3.connect(DB_PATH)
+
+    query = """
+        SELECT user_id, requests_list FROM friend_requests_optimized
+        WHERE user_id = ?
+    """
+
+    df_requests = pd.read_sql_query(query, conn, params=(user_id,))
+    conn.close()
+
+    if df_requests.empty:
+        return pd.DataFrame(columns=["send_user_id", "created_at"])
+
+    # JSON 데이터 변환
+    df_requests["requests_list"] = df_requests["requests_list"].apply(json.loads)
+    requests_expanded = []
+    
+    for _, row in df_requests.iterrows():
+        for req in row["requests_list"]:
+            requests_expanded.append({
+                "send_user_id": req["send_user_id"],
+                "created_at": req["created_at"]
+            })
+    
+    return pd.DataFrame(requests_expanded)
+
+# ✅ 네트워크 그래프 생성 함수
+def build_network(selected_user, df_filtered):
+    """네트워크 그래프를 생성"""
+    G = nx.Graph()
+    G.add_node(selected_user)
+
+    for _, row in df_filtered.iterrows():
+        send_user = row["send_user_id"]
+        G.add_node(send_user)
+        G.add_edge(selected_user, send_user)
+
+    return G
+
+# ✅ Streamlit → Dash 요청 처리
 @server.route("/update_network", methods=["POST"])
 def update_graph():
     """ Streamlit에서 받은 데이터를 Dash에서 네트워크로 변환 """
@@ -47,27 +110,11 @@ def update_graph():
     cyto_edges = [{"data": {"source": str(u), "target": str(v)}} for u, v in G.edges]
 
     print(f"✅ 생성된 네트워크 - 노드: {len(cyto_nodes)}, 엣지: {len(cyto_edges)}")
-    print(f"📊 네트워크 데이터: {cyto_nodes + cyto_edges}")  # 🔥 추가된 디버깅 코드
+    print(f"📊 네트워크 데이터: {cyto_nodes + cyto_edges}")  # 🔥 디버깅 코드
 
     return jsonify(cyto_nodes + cyto_edges)
 
-
-# Dash Layout
-app.layout = html.Div([
-    html.H3("📡 네트워크 성장 과정"),
-    cyto.Cytoscape(
-        id="cyto-graph",
-        layout={"name": "cose"},
-        style={"width": "100%", "height": "600px", "border": "1px solid black"},
-        elements=[],  # 🔥 초기에는 빈 리스트
-    ),
-    dcc.Interval(
-        id="interval-update",
-        interval=2000,  # 2초마다 업데이트
-        n_intervals=0
-    )
-])
-
+# ✅ 네트워크 그래프를 동적으로 업데이트
 @app.callback(
     Output("cyto-graph", "elements"),
     Input("interval-update", "n_intervals")
@@ -76,7 +123,6 @@ def update_elements(n):
     """ Dash 네트워크 그래프 동적 업데이트 """
     print(f"🔄 네트워크 그래프 업데이트 요청됨 (n_intervals={n})")
 
-    # 최근 요청된 유저 및 날짜 데이터 가져오기
     try:
         with open("latest_request.json", "r") as f:
             data = json.load(f)
@@ -101,3 +147,7 @@ def update_elements(n):
     print(f"✅ 네트워크 업데이트 완료 - 노드: {len(cyto_nodes)}, 엣지: {len(cyto_edges)}")
 
     return cyto_nodes + cyto_edges
+
+# ✅ Dash 서버 실행
+if __name__ == "__main__":
+    app.run_server(debug=True, port=8050)
