@@ -65,4 +65,4 @@ else:
 # ✅ Dash 네트워크 시각화 불러오기 (유저 & 날짜 반영)
 st.markdown("## 🌐 네트워크 시각화")
 iframe_url = f"http://127.0.0.1:8050/dash/?user={selected_user}&date={selected_date}"
-components.iframe(iframe_url, width=1500, height=900, scrolling=True)  # ✅ 동적 URL 반영
+components.iframe(iframe_url, width=1500, height=900, scrolling=True)
