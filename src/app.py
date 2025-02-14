@@ -4,6 +4,9 @@ import requests
 import sqlite3
 import streamlit.components.v1 as components
 
+# ✅ 페이지 설정 (가로 확장 레이아웃 적용)
+st.set_page_config(layout="wide")
+
 # ✅ SQLite 데이터베이스 경로
 DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"
 
@@ -20,10 +23,7 @@ selected_user = st.selectbox("유저를 선택하세요:", df_users["user_id"].a
 
 # ✅ 선택된 유저의 가입 날짜 가져오기
 user_created_at = df_users[df_users["user_id"].astype(str) == selected_user]["created_at"].values
-if len(user_created_at) > 0:
-    user_created_at = pd.to_datetime(user_created_at[0]).date()
-else:
-    user_created_at = None
+user_created_at = pd.to_datetime(user_created_at[0]).date() if len(user_created_at) > 0 else None
 
 # ✅ 해당 유저의 친구 요청 데이터 조회
 conn = sqlite3.connect(DB_PATH)
@@ -35,10 +35,9 @@ conn.close()
 
 # ✅ 선택된 유저의 친구 요청 기록이 있다면, 가입 이후부터 해당 날짜까지 범위 설정
 if not df_requests.empty:
-    df_requests["requests_list"] = df_requests["requests_list"].apply(lambda x: pd.DataFrame(eval(x)))
+    df_requests["requests_list"] = df_requests["requests_list"].apply(json.loads)
     min_date = user_created_at  # 유저 가입 날짜
-    max_date = df_requests["requests_list"].apply(lambda x: x["created_at"].max()).max()
-    min_date, max_date = pd.to_datetime(min_date).date(), pd.to_datetime(max_date).date()
+    max_date = df_requests["requests_list"].apply(lambda x: max([pd.to_datetime(req["created_at"]).date() for req in x], default=min_date)).max()
 else:
     min_date, max_date = user_created_at, user_created_at  # 유저 가입 날짜로 초기화
 
@@ -64,6 +63,6 @@ else:
 st.markdown(f"📊 **네트워크 노드 수:** {node_count}")
 st.markdown(f"🔗 **네트워크 엣지 수:** {edge_count}")
 
-# ✅ Dash 네트워크 시각화 불러오기
+# ✅ Dash 네트워크 시각화 불러오기 (가로폭 확장 적용)
 st.markdown("## 🌐 네트워크 시각화")
-components.iframe(f"http://127.0.0.1:8050/dash/?user={selected_user}&date={selected_date}", height=600, scrolling=True)
+components.iframe("http://127.0.0.1:8050/dash/", width="100%", height=900, scrolling=True)
