@@ -1,6 +1,6 @@
 import dash
 import dash_cytoscape as cyto
-import dash_html_components as html
+from dash import html
 import sqlite3
 import pandas as pd
 import json
@@ -25,6 +25,10 @@ app.layout = html.Div([
     )
 ])
 
+# ✅ 전역 변수로 네트워크 데이터 저장
+latest_network_data = []
+
+
 def get_network_data(user_id, selected_date):
     """선택된 유저의 네트워크 데이터를 가져옴"""
     conn = sqlite3.connect(DB_PATH)
@@ -37,6 +41,7 @@ def get_network_data(user_id, selected_date):
     conn.close()
 
     if df.empty:
+        print("⚠️ 유저의 친구 요청 데이터 없음")
         return []
 
     df["requests_list"] = df["requests_list"].apply(json.loads)
@@ -51,11 +56,14 @@ def get_network_data(user_id, selected_date):
                 network_nodes.append({"data": {"id": friend_id, "label": friend_id}})
                 edges.append({"data": {"source": str(user_id), "target": friend_id}})
 
+    print(f"✅ 네트워크 노드: {len(network_nodes)}, 엣지: {len(edges)}")
     return network_nodes + edges
+
 
 # ✅ API 엔드포인트: Streamlit이 요청을 보낼 때 실행됨
 @server.route("/update_network", methods=["POST"])
 def update_network():
+    global latest_network_data
     data = request.json
     user_id = data.get("selected_user")
     selected_date = pd.to_datetime(data.get("selected_date")).date()
@@ -64,9 +72,11 @@ def update_network():
         return jsonify({"error": "유효하지 않은 요청"}), 400
 
     network_data = get_network_data(user_id, selected_date)
+    latest_network_data = network_data  # 전역 변수 업데이트
     print(f"📊 업데이트된 네트워크 데이터 (노드 {len(network_data)}개): {network_data}")
 
     return jsonify(network_data)
+
 
 # ✅ Cytoscape 그래프 업데이트 로직
 @app.callback(
@@ -76,19 +86,16 @@ def update_network():
 def update_graph(_):
     """네트워크 그래프 업데이트"""
     try:
-        with server.test_request_context():
-            # ✅ Streamlit에서 마지막으로 요청한 데이터 사용
-            latest_request = request.get_json()
-            if not latest_request:
-                return []
-
-            user_id = latest_request.get("selected_user")
-            selected_date = pd.to_datetime(latest_request.get("selected_date")).date()
-            network_data = get_network_data(user_id, selected_date)
-            return network_data
+        if latest_network_data:
+            print(f"🟢 Cytoscape 업데이트: {len(latest_network_data)} 요소")
+            return latest_network_data
+        else:
+            print("⚠️ Cytoscape 업데이트 실패: 네트워크 데이터 없음")
+            return []
     except Exception as e:
         print(f"🚨 그래프 업데이트 중 오류 발생: {e}")
         return []
+
 
 # ✅ Dash 서버 실행
 if __name__ == "__main__":
