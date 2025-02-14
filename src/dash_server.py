@@ -22,11 +22,6 @@ app.layout = html.Div([
         style={"width": "100%", "height": "600px", "border": "1px solid black"},
         elements=[],  # 🔥 초기에는 빈 리스트
     ),
-    dcc.Interval(
-        id="interval-update",
-        interval=2000,  # 2초마다 업데이트
-        n_intervals=0
-    )
 ])
 
 # ✅ 친구 요청 데이터 로드 함수
@@ -68,9 +63,9 @@ def build_network(selected_user, df_filtered):
     G.add_node(selected_user)
 
     for _, row in df_filtered.iterrows():
-        send_user = row["send_user_id"]
+        send_user = str(row["send_user_id"])  # 🔥 ID를 문자열로 변환 (Cytoscape 호환성 문제 해결)
         G.add_node(send_user)
-        G.add_edge(selected_user, send_user)
+        G.add_edge(str(selected_user), send_user)
 
     return G
 
@@ -84,7 +79,7 @@ def update_graph():
         print("⚠️ 올바른 데이터가 전달되지 않음:", data)
         return jsonify([])
 
-    selected_user = data["selected_user"]
+    selected_user = str(data["selected_user"])  # 🔥 ID를 문자열로 변환
     selected_date = data["selected_date"]
 
     print(f"🟢 요청된 유저: {selected_user}, 날짜: {selected_date}")
@@ -117,11 +112,11 @@ def update_graph():
 # ✅ 네트워크 그래프를 동적으로 업데이트
 @app.callback(
     Output("cyto-graph", "elements"),
-    Input("interval-update", "n_intervals")
+    Input("cyto-graph", "id")  # 🔥 업데이트 트리거
 )
-def update_elements(n):
+def update_elements(_):
     """ Dash 네트워크 그래프 동적 업데이트 """
-    print(f"🔄 네트워크 그래프 업데이트 요청됨 (n_intervals={n})")
+    print(f"🔄 네트워크 그래프 업데이트 요청됨")
 
     try:
         with open("latest_request.json", "r") as f:
@@ -129,7 +124,7 @@ def update_elements(n):
     except FileNotFoundError:
         return []
 
-    selected_user = data.get("selected_user", None)
+    selected_user = str(data.get("selected_user", None))  # 🔥 ID를 문자열로 변환
     selected_date = data.get("selected_date", None)
 
     if not selected_user or not selected_date:
