@@ -26,6 +26,7 @@ if not df_requests.empty:
         })
         print(f"📤 Dash 서버로 요청 보냄: {selected_user}, {selected_date}")
         print(f"🔄 Dash 서버 응답 코드: {response.status_code}")
+        print(f"📊 Dash 서버 응답 데이터: {response.json()}")  # 🔥 추가된 디버깅 코드
 
     except requests.exceptions.ConnectionError:
         st.error("🚨 Dash 서버 실행을 확인하세요!")
