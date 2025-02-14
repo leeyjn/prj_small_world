@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import sqlite3
 import streamlit.components.v1 as components
+import json
 
 # ✅ 페이지 설정 (가로 확장 레이아웃 적용)
 st.set_page_config(layout="wide")
