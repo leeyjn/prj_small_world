@@ -16,36 +16,36 @@ DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, url_base_pathname="/dash/")
 
-# ✅ HORIZONTAL LAYOUT 적용
+# ✅ HORIZONTAL FLEX LAYOUT 적용
 app.layout = html.Div([
-    # 🔹 왼쪽 상단 제목 영역
+    # 🔹 상단 제목
     html.Div([
         html.H1("📊 유저 네트워크 성장 과정 시각화", style={"color": "white", "text-align": "left", "margin-left": "20px"})
     ], style={"width": "100%", "display": "flex", "justify-content": "flex-start"}),
 
-    # 🔹 전체 대시보드 영역 (네트워크 + 친구 수 변화)
+    # 🔹 네트워크 시각화 + 친구 수 변화 그래프 **완전한 가로 정렬**
     html.Div([
-        # 🔹 왼쪽: 네트워크 시각화
+        # 🔹 네트워크 시각화
         html.Div([
             html.H3("🌐 네트워크 시각화", style={"color": "white", "text-align": "center"}),
             cyto.Cytoscape(
                 id="cyto-graph",
                 layout={"name": "cose"},
-                style={"height": "650px", "width": "100%", "border": "1px solid lightgray", "backgroundColor": "#1E1E1E"},
+                style={"height": "700px", "width": "100%", "border": "1px solid lightgray", "backgroundColor": "#1E1E1E"},
                 elements=[],
                 stylesheet=[
                     {"selector": "node", "style": {"content": "data(label)", "color": "white", "background-color": "#4A90E2", "font-size": "14px"}},
                     {"selector": "edge", "style": {"width": 2, "line-color": "white"}},
                 ],
             )
-        ], style={"width": "60%", "display": "inline-block", "padding": "10px", "margin-left": "20px"}),
+        ], style={"width": "50%", "display": "flex", "flex-direction": "column", "justify-content": "center", "padding": "10px", "margin-left": "20px"}),
 
-        # 🔹 오른쪽: 친구 수 변화 그래프
+        # 🔹 친구 수 변화 그래프
         html.Div([
             html.H3("📈 친구 수 변화", style={"color": "white", "text-align": "center"}),
-            dcc.Graph(id="friend-count-graph", style={"height": "650px", "width": "100%"})
-        ], style={"width": "40%", "display": "inline-block", "padding": "10px", "margin-right": "20px"}),
-    ], style={"display": "flex", "flex-direction": "row"}),
+            dcc.Graph(id="friend-count-graph", style={"height": "700px", "width": "100%"})
+        ], style={"width": "50%", "display": "flex", "flex-direction": "column", "justify-content": "center", "padding": "10px", "margin-right": "20px"}),
+    ], style={"display": "flex", "flex-direction": "row", "width": "100%", "justify-content": "center", "align-items": "center"}),
 ])
 
 # ✅ 네트워크 데이터 저장 변수
