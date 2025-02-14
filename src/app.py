@@ -1,15 +1,7 @@
 import streamlit as st
-import subprocess
-from data_loader import load_users, load_friend_requests
-from network_builder import build_network
-from ui_components import user_selector, date_slider
 import requests
-
-DASH_SERVER_CMD = ["python", "src/dash_server.py"]
-try:
-    subprocess.Popen(DASH_SERVER_CMD, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-except Exception as e:
-    st.error(f"⚠️ Dash 서버 실행 실패: {e}")
+from data_loader import load_users, load_friend_requests
+from ui_components import user_selector, date_slider
 
 df_users = load_users()
 selected_user = user_selector(df_users)

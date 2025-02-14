@@ -28,11 +28,13 @@ app.layout = html.Div([
 )
 def update_graph(selected_user, time_index):
     if not selected_user:
+        print("⚠️ 유저 선택 안됨")
         return []
 
     df_requests = load_friend_requests(selected_user)
     
     if df_requests.empty:
+        print(f"⚠️ 유저 {selected_user}의 친구 요청 데이터 없음")
         return []
 
     selected_date = df_requests["created_at"].min() + pd.to_timedelta(time_index, unit="D")
@@ -41,6 +43,7 @@ def update_graph(selected_user, time_index):
     cyto_nodes = [{"data": {"id": str(n), "label": str(n)}} for n in G.nodes]
     cyto_edges = [{"data": {"source": str(u), "target": str(v)}} for u, v in G.edges]
 
+    print(f"🟢 노드 개수: {len(cyto_nodes)}, 엣지 개수: {len(cyto_edges)}")
     return cyto_nodes + cyto_edges
 
 if __name__ == "__main__":

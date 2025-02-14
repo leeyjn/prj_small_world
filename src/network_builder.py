@@ -12,4 +12,5 @@ def build_network(user_id, df_requests, selected_date):
         G.add_node(friend_id, label=friend_id)
         G.add_edge(str(user_id), friend_id)
 
+    print(f"🟢 네트워크 빌드 완료: {len(G.nodes)} 노드, {len(G.edges)} 엣지")
     return G

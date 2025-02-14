@@ -9,9 +9,10 @@ def load_users():
     conn = sqlite3.connect(DB_PATH)
     query = "SELECT user_id, friends_num, created_at FROM users ORDER BY created_at ASC"
     df_users = pd.read_sql_query(query, conn)
-    
     df_users["created_at"] = pd.to_datetime(df_users["created_at"], errors="coerce")  # 날짜 변환
     conn.close()
+    
+    print(f"🟢 유저 데이터 로드 완료 ({len(df_users)}명)")
     return df_users
 
 def load_friend_requests(user_id):
@@ -31,4 +32,5 @@ def load_friend_requests(user_id):
     if "created_at" in df_requests_expanded:
         df_requests_expanded["created_at"] = pd.to_datetime(df_requests_expanded["created_at"], errors="coerce")
 
+    print(f"🟢 유저 {user_id}의 친구 요청 데이터 로드 완료 ({len(df_requests_expanded)}개)")
     return df_requests_expanded
