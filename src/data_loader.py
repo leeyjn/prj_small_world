@@ -9,6 +9,7 @@ def load_users():
     conn = sqlite3.connect(DB_PATH)
     query = "SELECT user_id, friends_num, created_at FROM users ORDER BY created_at ASC"
     df_users = pd.read_sql_query(query, conn)
+    
     df_users["created_at"] = pd.to_datetime(df_users["created_at"], errors="coerce")  # 날짜 변환
     conn.close()
     return df_users
@@ -21,9 +22,13 @@ def load_friend_requests(user_id):
     conn.close()
 
     if df_requests.empty:
-        return pd.DataFrame(columns=["receive_user_id", "send_user_id", "created_at", "status"])
+        print(f"⚠️ 유저 {user_id}의 친구 요청 데이터 없음")
+        return pd.DataFrame(columns=["send_user_id", "created_at", "status"])
 
     requests_list = json.loads(df_requests.iloc[0]["requests_list"])
     df_requests_expanded = pd.DataFrame(requests_list)
-    df_requests_expanded["created_at"] = pd.to_datetime(df_requests_expanded["created_at"], errors="coerce")
+
+    if "created_at" in df_requests_expanded:
+        df_requests_expanded["created_at"] = pd.to_datetime(df_requests_expanded["created_at"], errors="coerce")
+
     return df_requests_expanded
