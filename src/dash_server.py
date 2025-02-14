@@ -16,12 +16,16 @@ app = dash.Dash(__name__, server=server, url_base_pathname="/dash/")
 
 # ✅ 네트워크 그래프 초기 상태
 app.layout = html.Div([
-    html.H2("📊 유저 네트워크 성장 과정"),
+    html.H2("📊 유저 네트워크 성장 과정", style={"color": "white", "text-align": "center"}),  # 제목을 하얀색으로 변경
     cyto.Cytoscape(
         id="cyto-graph",
         layout={"name": "cose"},
-        style={"height": "600px", "width": "100%", "border": "1px solid lightgray"},
-        elements=[]
+        style={"height": "600px", "width": "100%", "border": "1px solid lightgray", "backgroundColor": "#1E1E1E"},  # 배경을 더 밝게
+        elements=[],
+        stylesheet=[
+            {"selector": "node", "style": {"content": "data(label)", "color": "white", "background-color": "#4A90E2", "font-size": "16px"}},
+            {"selector": "edge", "style": {"width": 2, "line-color": "white"}},  # 엣지 색상 변경
+        ],
     )
 ])
 
