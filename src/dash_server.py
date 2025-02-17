@@ -29,7 +29,7 @@ app.layout = html.Div([
                 style={"height": "700px", "width": "100%", "border": "1px solid lightgray", "backgroundColor": "#2C2C54"},
                 elements=[],
                 stylesheet=[
-                    {"selector": "node", "style": {"content": "data(label)", "color": "#1C1C1C", "background-color": "#FFFF66", "font-size": "14px"}},
+                    {"selector": "node", "style": {"content": "data(label)", "color": "#1C1C1C", "background-color": "#FFD700", "font-size": "14px"}},
                     {"selector": "edge", "style": {"width": 2, "line-color": "#1E90FF"}},
                 ],
             )
@@ -91,13 +91,17 @@ def get_friend_count_data(user_id):
             req_date = pd.to_datetime(req["created_at"]).date()
             friend_counts[req_date] = friend_counts.get(req_date, 0) + 1
 
-    # ✅ 날짜별 누적 친구 수 계산
+    # ✅ 날짜별 누적 친구 수 계산 (가입 날짜부터 최신 친구 추가 날짜까지 반영)
     sorted_dates = sorted(friend_counts.keys())
     cumulative_friends = []
     total_friends = 0
 
-    for date in sorted_dates:
-        total_friends += friend_counts[date]
+    min_date = sorted_dates[0] if sorted_dates else pd.to_datetime("today").date()
+    max_date = sorted_dates[-1] if sorted_dates else min_date  # 최소, 최대 날짜 설정
+
+    for date in pd.date_range(min_date, max_date):
+        date = date.date()
+        total_friends += friend_counts.get(date, 0)
         cumulative_friends.append({"date": date, "friend_count": total_friends})
 
     return pd.DataFrame(cumulative_friends)
