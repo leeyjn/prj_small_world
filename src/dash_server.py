@@ -15,21 +15,21 @@ DB_PATH = "C:/Users/pc/Python_Projects/prj_small_world/db/network_analysis.db"
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, url_base_pathname="/dash/")
 
-# ✅ HORIZONTAL FLEX LAYOUT 적용 (네트워크 시각화 + 친구 수 변화 그래프)
+# ✅ 레이아웃 설정 (네트워크 시각화 + 친구 수 변화 그래프 + 이벤트 변화 그래프)
 app.layout = html.Div([
-    html.H1("📊 유저 네트워크 성장 과정 시각화", style={"color": "white", "text-align": "left", "margin-left": "20px"}),
+    html.H1("📊 유저 네트워크 & 이벤트 변화 시각화", style={"color": "black", "text-align": "left", "margin-left": "20px"}),
 
     html.Div([
         # 🌐 네트워크 시각화
         html.Div([
-            html.H3("🌐 네트워크 시각화", style={"color": "white", "text-align": "center"}),
+            html.H3("🌐 네트워크 시각화", style={"color": "black", "text-align": "center"}),
             cyto.Cytoscape(
                 id="cyto-graph",
                 layout={"name": "cose", "gravity": 0.2},
-                style={"height": "700px", "width": "100%", "border": "1px solid lightgray", "backgroundColor": "#2C2C54"},
+                style={"height": "600px", "width": "100%", "border": "1px solid lightgray", "backgroundColor": "#F8F9FA"},
                 elements=[],
                 stylesheet=[
-                    {"selector": "node", "style": {"content": "data(label)", "color": "#1C1C1C", "background-color": "#FFD700", "font-size": "14px"}},
+                    {"selector": "node", "style": {"content": "data(label)", "color": "#000000", "background-color": "#FFD700", "font-size": "14px"}},
                     {"selector": "edge", "style": {"width": 2, "line-color": "#1E90FF"}},
                 ],
             )
@@ -37,10 +37,16 @@ app.layout = html.Div([
 
         # 📈 친구 수 변화 그래프
         html.Div([
-            html.H3("📈 친구 수 변화", style={"color": "white", "text-align": "center"}),
-            dcc.Graph(id="friend-count-graph", style={"height": "700px", "width": "100%", "backgroundColor": "#2C2C54"})
+            html.H3("📈 친구 수 변화", style={"color": "black", "text-align": "center"}),
+            dcc.Graph(id="friend-count-graph", style={"height": "600px", "width": "100%", "backgroundColor": "#F8F9FA"})
         ], style={"width": "50%", "padding": "10px", "margin-right": "20px"}),
     ], style={"display": "flex", "flex-direction": "row", "width": "100%", "justify-content": "center", "align-items": "center"}),
+
+    # 🔥 이벤트 발생 변화 그래프 추가
+    html.Div([
+        html.H3("🔥 이벤트 발생 변화", style={"color": "black", "text-align": "center"}),
+        dcc.Graph(id="event-count-graph", style={"height": "500px", "width": "100%", "backgroundColor": "#F8F9FA"})
+    ], style={"width": "90%", "margin": "auto", "padding": "10px", "border-radius": "10px", "border": "1px solid gray"}),
 ])
 
 # ✅ 네트워크 데이터 저장 변수
@@ -73,38 +79,20 @@ def get_network_data(user_id, selected_date):
     print(f"✅ 네트워크 노드: {len(network_nodes)}, 엣지: {len(edges)}")
     return network_nodes + edges
 
-def get_friend_count_data(user_id):
-    """선택된 유저의 친구 수 변화를 시각화하기 위한 데이터 생성"""
+def get_event_summary(user_id):
+    """유저의 이벤트 발생 데이터를 가져옴 (user_event_summary 기반)"""
     conn = sqlite3.connect(DB_PATH)
-    query = "SELECT requests_list FROM friend_requests_optimized WHERE user_id = ?"
+    query = """
+        SELECT event_date, event_key, SUM(event_count) as total_count
+        FROM user_event_summary
+        WHERE user_id = ?
+        GROUP BY event_date, event_key
+        ORDER BY event_date
+    """
     df = pd.read_sql_query(query, conn, params=(user_id,))
     conn.close()
 
-    if df.empty:
-        return pd.DataFrame(columns=["date", "friend_count"])
-
-    df["requests_list"] = df["requests_list"].apply(json.loads)
-
-    friend_counts = {}
-    for _, row in df.iterrows():
-        for req in row["requests_list"]:
-            req_date = pd.to_datetime(req["created_at"]).date()
-            friend_counts[req_date] = friend_counts.get(req_date, 0) + 1
-
-    # ✅ 날짜별 누적 친구 수 계산 (가입 날짜부터 최신 친구 추가 날짜까지 반영)
-    sorted_dates = sorted(friend_counts.keys())
-    cumulative_friends = []
-    total_friends = 0
-
-    min_date = sorted_dates[0] if sorted_dates else pd.to_datetime("today").date()
-    max_date = sorted_dates[-1] if sorted_dates else min_date  # 최소, 최대 날짜 설정
-
-    for date in pd.date_range(min_date, max_date):
-        date = date.date()
-        total_friends += friend_counts.get(date, 0)
-        cumulative_friends.append({"date": date, "friend_count": total_friends})
-
-    return pd.DataFrame(cumulative_friends)
+    return df
 
 @server.route("/update_network", methods=["POST"])
 def update_network():
@@ -133,13 +121,14 @@ def update_friend_count_graph(_):
     if not latest_network_data or not latest_user_id:
         return px.line(title="No Data", labels={"date": "날짜", "friend_count": "친구 수"})
 
-    df_friends = get_friend_count_data(latest_user_id)
+    df_friends = get_event_summary(latest_user_id)
 
     if df_friends.empty:
         return px.line(title="No Data", labels={"date": "날짜", "friend_count": "친구 수"})
 
-    fig = px.line(df_friends, x="date", y="friend_count", markers=True, title=f"📊 {latest_user_id}의 친구 수 변화")
-    fig.update_layout(paper_bgcolor="#2C2C54", plot_bgcolor="#2C2C54", font=dict(color="white"))
+    fig = px.line(df_friends, x="event_date", y="total_count", color="event_key", markers=True, 
+                  title=f"🔥 {latest_user_id}의 이벤트 발생 변화")
+    fig.update_layout(paper_bgcolor="#F8F9FA", plot_bgcolor="#F8F9FA", font=dict(color="black"))
     return fig
 
 if __name__ == "__main__":
