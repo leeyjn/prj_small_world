@@ -4,6 +4,7 @@ import requests
 import sqlite3
 import json
 import streamlit.components.v1 as components
+from datetime import timedelta
 
 # ✅ 페이지 설정 (가로 확장 레이아웃 적용)
 st.set_page_config(layout="wide")
@@ -38,9 +39,15 @@ conn.close()
 if not df_requests.empty:
     df_requests["requests_list"] = df_requests["requests_list"].apply(json.loads)  # ✅ json.loads() 적용
     min_date = user_created_at  # 유저 가입 날짜
-    max_date = df_requests["requests_list"].apply(lambda x: max([pd.to_datetime(req["created_at"]).date() for req in x], default=min_date)).max()
+    max_date = df_requests["requests_list"].apply(
+        lambda x: max([pd.to_datetime(req["created_at"]).date() for req in x], default=min_date)
+    ).max()
 else:
     min_date, max_date = user_created_at, user_created_at  # 유저 가입 날짜로 초기화
+
+# ✅ 오류 방지: `min_date == max_date`일 경우, `max_date`를 +1일 추가
+if min_date == max_date:
+    max_date += timedelta(days=1)
 
 # ✅ 네트워크 빌드 시간 선택 슬라이더
 selected_date = st.slider("네트워크 빌드 시간 선택", min_value=min_date, max_value=max_date, value=min_date)
