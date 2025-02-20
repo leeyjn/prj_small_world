@@ -101,8 +101,15 @@ def update_network():
     selected_user = data["selected_user"]
     selected_date = pd.to_datetime(data["selected_date"]).date()
 
-    latest_user_id = selected_user  # 유저 ID 저장
+    latest_user_id = selected_user  # 현재 선택된 유저 저장
     latest_network_data = get_network_data(selected_user, selected_date)
+
+    # 🔥 디버깅: 데이터 정상 로드 확인
+    if latest_network_data:
+        print(f"✅ 네트워크 데이터 로드 완료 (노드 수: {len(latest_network_data)})")
+    else:
+        print("⚠️ 네트워크 데이터가 없음!")
+
     return jsonify(latest_network_data)
 
 @app.callback(
